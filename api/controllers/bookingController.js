@@ -1,4 +1,147 @@
 const Booking = require("../models/Booking");
+const crypto = require("crypto");
+
+// MOCK RAZORPAY - For testing only (not real payment gateway)
+// Generate mock order ID
+const generateMockOrderId = () => {
+  return `order_mock_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+};
+
+// Generate mock payment ID
+const generateMockPaymentId = () => {
+  return `pay_mock_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+};
+
+// Create Mock Payment Order
+exports.createPaymentOrder = async (req, res) => {
+  try {
+    const { bookingId } = req.body;
+    const userData = req.user;
+
+    // Get existing booking
+    const booking = await Booking.findById(bookingId);
+
+    if (!booking) {
+      return res.status(404).json({
+        message: "Booking not found",
+        success: false,
+      });
+    }
+
+    if (booking.user.toString() !== userData.id.toString()) {
+      return res.status(403).json({
+        message: "Unauthorized to pay for this booking",
+        success: false,
+      });
+    }
+
+    // Generate mock order
+    const mockOrderId = generateMockOrderId();
+    const amount = Math.round(booking.price * 100); // Amount in paise
+
+    // Save order ID to booking
+    booking.razorpayOrderId = mockOrderId;
+    await booking.save();
+
+    console.log(
+      "[MOCK PAYMENT] Order created:",
+      mockOrderId,
+      "Amount:",
+      amount / 100,
+      "INR"
+    );
+
+    res.status(200).json({
+      success: true,
+      order: {
+        id: mockOrderId,
+        amount: amount,
+        currency: "INR",
+      },
+      keyId: "rzp_test_mock_key",
+      mock: true,
+      message: "[MOCK MODE] Use any card details to test payment",
+    });
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({
+      message: "Error creating payment order",
+      error: err,
+      success: false,
+    });
+  }
+};
+
+// Verify Mock Payment
+exports.verifyPayment = async (req, res) => {
+  try {
+    const { razorpay_payment_id, razorpay_order_id, razorpay_signature, bookingId } =
+      req.body;
+    const userData = req.user;
+
+    // For mock payment, always verify successfully (90% success rate for demo)
+    const shouldSucceed = Math.random() > 0.1; // 90% success
+
+    if (shouldSucceed) {
+      // Payment verified successfully (mock)
+      const booking = await Booking.findById(bookingId);
+
+      if (!booking) {
+        return res.status(404).json({
+          message: "Booking not found",
+          success: false,
+        });
+      }
+
+      if (booking.user.toString() !== userData.id.toString()) {
+        return res.status(403).json({
+          message: "Unauthorized to verify this payment",
+          success: false,
+        });
+      }
+
+      // Update booking with payment details
+      booking.paymentStatus = "completed";
+      booking.razorpayPaymentId = razorpay_payment_id;
+      booking.razorpaySignature = razorpay_signature;
+      await booking.save();
+
+      console.log(
+        "[MOCK PAYMENT] Payment verified successfully:",
+        razorpay_payment_id
+      );
+
+      res.status(200).json({
+        message: "Payment verified successfully",
+        success: true,
+        booking,
+        mock: true,
+      });
+    } else {
+      // Simulate payment failure (10% chance)
+      const booking = await Booking.findById(bookingId);
+      if (booking) {
+        booking.paymentStatus = "failed";
+        await booking.save();
+      }
+
+      console.log("[MOCK PAYMENT] Payment verification failed (simulated)");
+
+      res.status(400).json({
+        message: "Payment verification failed",
+        success: false,
+        mock: true,
+      });
+    }
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({
+      message: "Error verifying payment",
+      error: err,
+      success: false,
+    });
+  }
+};
 
 // Check if dates are available for a place
 exports.checkAvailability = async (req, res) => {

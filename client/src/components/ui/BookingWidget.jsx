@@ -6,6 +6,7 @@ import { toast } from 'react-toastify';
 import { useAuth } from '../../../hooks';
 import axiosInstance from '@/utils/axios';
 import DatePickerWithRange from './DatePickerWithRange';
+import MockPaymentModal from './MockPaymentModal';
 
 const BookingWidget = ({ place }) => {
   const [dateRange, setDateRange] = useState({ from: null, to: null });
@@ -15,6 +16,10 @@ const BookingWidget = ({ place }) => {
     phone: '',
   });
   const [redirect, setRedirect] = useState('');
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [showMockPayment, setShowMockPayment] = useState(false);
+  const [currentOrderDetails, setCurrentOrderDetails] = useState(null);
+  const [currentBookingId, setCurrentBookingId] = useState(null);
   const { user } = useAuth();
 
   const { noOfGuests, name, phone } = bookingData;
@@ -61,6 +66,8 @@ const BookingWidget = ({ place }) => {
       return toast.error("Phone can't be empty");
     }
 
+    setIsProcessing(true);
+
     try {
       // Check availability before booking
       const availabilityCheck = await axiosInstance.get(
@@ -75,12 +82,14 @@ const BookingWidget = ({ place }) => {
       );
 
       if (!availabilityCheck.data.available) {
+        setIsProcessing(false);
         return toast.error(
           'These dates are not available. Please select different dates.',
         );
       }
 
-      const response = await axiosInstance.post('/bookings', {
+      // Create booking first
+      const bookingResponse = await axiosInstance.post('/bookings', {
         checkIn: dateRange.from,
         checkOut: dateRange.to,
         noOfGuests,
@@ -90,10 +99,21 @@ const BookingWidget = ({ place }) => {
         price: numberOfNights * price,
       });
 
-      const bookingId = response.data.booking._id;
+      const bookingId = bookingResponse.data.booking._id;
+      const totalPrice = numberOfNights * price;
 
-      setRedirect(`/account/bookings/${bookingId}`);
-      toast('Congratulations! Enjoy your trip.');
+      // Create payment order with Razorpay
+      const paymentOrderResponse = await axiosInstance.post(
+        '/bookings/create-payment-order',
+        { bookingId },
+      );
+
+      const { order } = paymentOrderResponse.data;
+
+      // Show mock payment modal instead of Razorpay
+      setCurrentOrderDetails(order);
+      setCurrentBookingId(bookingId);
+      setShowMockPayment(true);
     } catch (error) {
       if (error.response?.status === 409) {
         toast.error(
@@ -103,7 +123,39 @@ const BookingWidget = ({ place }) => {
         toast.error('Something went wrong!');
       }
       console.log('Error: ', error);
+      setIsProcessing(false);
     }
+  };
+
+  const handleMockPaymentSuccess = async (paymentData) => {
+    try {
+      // Verify payment on backend
+      const verifyResponse = await axiosInstance.post('/bookings/verify-payment', {
+        razorpay_payment_id: paymentData.razorpay_payment_id,
+        razorpay_order_id: paymentData.razorpay_order_id,
+        razorpay_signature: paymentData.razorpay_signature,
+        bookingId: currentBookingId,
+      });
+
+      if (verifyResponse.data.success) {
+        setRedirect(`/account/bookings/${currentBookingId}`);
+        toast.success('Payment successful! Enjoy your trip.');
+      } else {
+        toast.error('Payment verification failed');
+      }
+    } catch (error) {
+      toast.error('Payment verification failed');
+      console.log('Verification Error: ', error);
+    } finally {
+      setIsProcessing(false);
+      setShowMockPayment(false);
+    }
+  };
+
+  const handleMockPaymentClose = () => {
+    setShowMockPayment(false);
+    setIsProcessing(false);
+    toast.info('Payment cancelled. Your booking is pending.');
   };
 
   if (redirect) {
@@ -148,10 +200,21 @@ const BookingWidget = ({ place }) => {
           />
         </div>
       </div>
-      <button onClick={handleBooking} className="primary mt-4">
-        Book this place
-        {numberOfNights > 0 && <span> ₹{numberOfNights * place.price}</span>}
+      <button 
+        onClick={handleBooking} 
+        className="primary mt-4 disabled:opacity-50 disabled:cursor-not-allowed"
+        disabled={isProcessing}
+      >
+        {isProcessing ? 'Processing...' : 'Book this place'}
+        {numberOfNights > 0 && !isProcessing && <span> ₹{numberOfNights * place.price}</span>}
       </button>
+
+      <MockPaymentModal
+        isOpen={showMockPayment}
+        orderDetails={currentOrderDetails}
+        onPaymentSuccess={handleMockPaymentSuccess}
+        onClose={handleMockPaymentClose}
+      />
     </div>
   );
 };

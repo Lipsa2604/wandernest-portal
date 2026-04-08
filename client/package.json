@@ -25,6 +25,7 @@
     "jwt-decode": "^3.1.2",
     "lucide-react": "^0.274.0",
     "postcss": "^8.4.21",
+    "razorpay": "^2.9.6",
     "react": "^18.2.0",
     "react-day-picker": "^8.8.1",
     "react-dom": "^18.2.0",
