@@ -62,6 +62,24 @@ const BookingWidget = ({ place }) => {
     }
 
     try {
+      // Check availability before booking
+      const availabilityCheck = await axiosInstance.get(
+        '/bookings/check-availability',
+        {
+          params: {
+            place: id,
+            checkIn: dateRange.from,
+            checkOut: dateRange.to,
+          },
+        },
+      );
+
+      if (!availabilityCheck.data.available) {
+        return toast.error(
+          'These dates are not available. Please select different dates.',
+        );
+      }
+
       const response = await axiosInstance.post('/bookings', {
         checkIn: dateRange.from,
         checkOut: dateRange.to,
@@ -77,7 +95,13 @@ const BookingWidget = ({ place }) => {
       setRedirect(`/account/bookings/${bookingId}`);
       toast('Congratulations! Enjoy your trip.');
     } catch (error) {
-      toast.error('Something went wrong!');
+      if (error.response?.status === 409) {
+        toast.error(
+          'These dates are already booked. Please choose different dates.',
+        );
+      } else {
+        toast.error('Something went wrong!');
+      }
       console.log('Error: ', error);
     }
   };
@@ -95,7 +119,7 @@ const BookingWidget = ({ place }) => {
         <div className="flex w-full ">
           <DatePickerWithRange setDateRange={setDateRange} />
         </div>
-        <div className="border-t py-3 px-4">
+        <div className="border-t px-4 py-3">
           <label>Number of guests: </label>
           <input
             type="number"
@@ -107,7 +131,7 @@ const BookingWidget = ({ place }) => {
             onChange={handleBookingData}
           />
         </div>
-        <div className="border-t py-3 px-4">
+        <div className="border-t px-4 py-3">
           <label>Your full name: </label>
           <input
             type="text"
