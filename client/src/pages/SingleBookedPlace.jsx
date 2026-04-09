@@ -6,24 +6,26 @@ import AddressLink from '../components/ui/AddressLink';
 import BookingDates from '../components/ui/BookingDates';
 import PlaceGallery from '../components/ui/PlaceGallery';
 import Spinner from '../components/ui/Spinner';
+import ReviewForm from '../components/ui/ReviewForm';
+import BlindReviewCard from '../components/ui/BlindReviewCard';
+import HostBookingView from './HostBookingView';
 import axiosInstance from '../utils/axios';
 
 const SingleBookedPlace = () => {
   const { id } = useParams();
   const [booking, setBooking] = useState({});
+  const [userRole, setUserRole] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [showReviewForm, setShowReviewForm] = useState(false);
+  const [reviewStatus, setReviewStatus] = useState(null);
+  const [reviewLoading, setReviewLoading] = useState(false);
 
   const getBookings = async () => {
     try {
       setLoading(true);
-      const { data } = await axiosInstance.get('/bookings');
-
-      // filter the data to get current booking
-      const filteredBooking = data.booking.filter(
-        (booking) => booking._id === id,
-      );
-
-      setBooking(filteredBooking[0]);
+      const { data } = await axiosInstance.get(`/bookings/${id}`);
+      setBooking(data.booking);
+      setUserRole(data.userRole);
     } catch (error) {
       console.log('Error: ', error);
     } finally {
@@ -31,12 +33,33 @@ const SingleBookedPlace = () => {
     }
   };
 
+  const checkPendingReview = async () => {
+    if (!id) return;
+    try {
+      setReviewLoading(true);
+      const { data } = await axiosInstance.get(
+        `/reviews/booking/${id}/pending`
+      );
+      setReviewStatus(data);
+    } catch (error) {
+      console.log('Error checking review status:', error);
+    } finally {
+      setReviewLoading(false);
+    }
+  };
+
   useEffect(() => {
     getBookings();
+    checkPendingReview();
   }, [id]);
 
   if (loading) {
     return <Spinner />;
+  }
+
+  // If user is a host, show the host view
+  if (userRole === 'host') {
+    return <HostBookingView />;
   }
 
   return (
@@ -65,6 +88,29 @@ const SingleBookedPlace = () => {
             </div>
           </div>
           <PlaceGallery place={booking?.place} />
+
+          {/* Review Section */}
+          {reviewStatus && !reviewLoading && (
+            <div className="my-8 space-y-6">
+              <BlindReviewCard
+                bookingId={id}
+                isBlind={!reviewStatus.reviewExists || reviewStatus.review?.isBlind}
+                reviewExists={reviewStatus.reviewExists}
+                onReviewClick={() => setShowReviewForm(true)}
+              />
+
+              {showReviewForm && (
+                <ReviewForm
+                  bookingId={id}
+                  placeTitle={booking?.place?.title}
+                  onReviewSubmitted={(review) => {
+                    setShowReviewForm(false);
+                    checkPendingReview();
+                  }}
+                />
+              )}
+            </div>
+          )}
         </div>
       ) : (
         <h1> No data</h1>

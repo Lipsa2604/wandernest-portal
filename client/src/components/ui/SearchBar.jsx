@@ -12,19 +12,36 @@ const SearchBar = () => {
 
   const handleSearch = async (e) => {
     clearTimeout(searchTimeout);
-    setSearchText(e.target.value);
+    const inputValue = e.target.value;
+    setSearchText(inputValue);
 
-    if (searchText.trimStart() !== '') {
+    if (inputValue.trimStart() !== '') {
       setLoading(true);
       setSearchTimeout(
         setTimeout(async () => {
-          const { data } = await axiosInstance.get(
-            `/places/search/${searchText.trimStart()}`,
-          );
-          setPlaces(data);
-          setLoading(false);
+          try {
+            const { data } = await axiosInstance.get(
+              `/places/search/${inputValue.trimStart()}`,
+            );
+            setPlaces(data);
+            setLoading(false);
+          } catch (error) {
+            console.log('Search error:', error);
+            setLoading(false);
+          }
         }, 500),
       );
+    } else {
+      // If search is empty, fetch all places
+      setLoading(true);
+      try {
+        const { data } = await axiosInstance.get('/places');
+        setPlaces(data.places);
+        setLoading(false);
+      } catch (error) {
+        console.log('Error fetching all places:', error);
+        setLoading(false);
+      }
     }
   };
 

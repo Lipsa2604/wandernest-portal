@@ -297,3 +297,142 @@ exports.getBookings = async (req, res) => {
     });
   }
 };
+
+// Get bookings for host's properties
+exports.getHostBookings = async (req, res) => {
+  try {
+    const userData = req.user;
+    if (!userData) {
+      return res
+        .status(401)
+        .json({ error: "You are not authorized to access this page!" });
+    }
+
+    // Find all places owned by this user
+    const Place = require("../models/Place");
+    const userPlaces = await Place.find({ owner: userData.id }).select("_id");
+    const placeIds = userPlaces.map(place => place._id);
+
+    // Find all bookings for those places
+    const booking = await Booking.find({ place: { $in: placeIds } })
+      .populate("place")
+      .populate("user", "name email picture")
+      .sort({ createdAt: -1 });
+
+    res.status(200).json({ booking, success: true });
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({
+      message: "Internal server error",
+      error: err,
+      success: false,
+    });
+  }
+};
+
+// Get single booking by ID (for guest or host viewing)
+exports.getBookingById = async (req, res) => {
+  try {
+    const { bookingId } = req.params;
+    const userData = req.user;
+
+    if (!userData) {
+      return res
+        .status(401)
+        .json({ error: "You are not authorized to access this page!" });
+    }
+
+    // Find the booking
+    const booking = await Booking.findById(bookingId)
+      .populate("place")
+      .populate("user", "name email picture");
+
+    if (!booking) {
+      return res.status(404).json({
+        message: "Booking not found",
+        success: false,
+      });
+    }
+
+    // Check if user is the guest (who made the booking)
+    const isGuest = booking.user._id.toString() === userData.id.toString();
+
+    // Check if user is the host (owner of the property)
+    const isHost = booking.place.owner.toString() === userData.id.toString();
+
+    if (!isGuest && !isHost) {
+      return res.status(403).json({
+        message: "You are not authorized to view this booking",
+        success: false,
+      });
+    }
+
+    res.status(200).json({
+      booking,
+      userRole: isGuest ? "guest" : "host",
+      success: true,
+    });
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({
+      message: "Internal server error",
+      error: err,
+      success: false,
+    });
+  }
+};
+
+// Cancel pending booking (used when payment is cancelled)
+exports.cancelBooking = async (req, res) => {
+  try {
+    const { bookingId } = req.params;
+    const userData = req.user;
+
+    if (!userData) {
+      return res
+        .status(401)
+        .json({ error: "You are not authorized to access this page!" });
+    }
+
+    // Find the booking
+    const booking = await Booking.findById(bookingId);
+
+    if (!booking) {
+      return res.status(404).json({
+        message: "Booking not found",
+        success: false,
+      });
+    }
+
+    // Check if user is the one who made the booking
+    if (booking.user.toString() !== userData.id.toString()) {
+      return res.status(403).json({
+        message: "You are not authorized to cancel this booking",
+        success: false,
+      });
+    }
+
+    // Only allow cancellation if payment is not completed
+    if (booking.paymentStatus === 'completed' || booking.paymentStatus === 'verified') {
+      return res.status(400).json({
+        message: "Cannot cancel a confirmed booking",
+        success: false,
+      });
+    }
+
+    // Delete the booking
+    await Booking.findByIdAndDelete(bookingId);
+
+    res.status(200).json({
+      message: "Booking cancelled successfully",
+      success: true,
+    });
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({
+      message: "Internal server error",
+      error: err,
+      success: false,
+    });
+  }
+};

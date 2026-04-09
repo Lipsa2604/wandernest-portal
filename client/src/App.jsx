@@ -10,6 +10,7 @@ import LoginPage from './pages/LoginPage';
 import ProfilePage from './pages/ProfilePage';
 import PlacesPage from './pages/PlacesPage';
 import BookingsPage from './pages/BookingsPage';
+import HostBookingsPage from './pages/HostBookingsPage';
 import PlacesFormPage from './pages/PlacesFormPage';
 import PlacePage from './pages/PlacePage';
 import SingleBookedPlace from './pages/SingleBookedPlace';
@@ -43,6 +44,7 @@ function App() {
               <Route path="/account/places/:id" element={<PlacesFormPage />} />
               <Route path="/place/:id" element={<PlacePage />} />
               <Route path="/account/bookings" element={<BookingsPage />} />
+              <Route path="/account/bookings/host" element={<HostBookingsPage />} />
               <Route
                 path="/account/bookings/:id"
                 element={<SingleBookedPlace />}

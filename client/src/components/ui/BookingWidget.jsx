@@ -96,11 +96,11 @@ const BookingWidget = ({ place }) => {
         name,
         phone,
         place: id,
-        price: numberOfNights * price,
+        price: numberOfNights * price * noOfGuests,
       });
 
       const bookingId = bookingResponse.data.booking._id;
-      const totalPrice = numberOfNights * price;
+      const totalPrice = numberOfNights * price * noOfGuests;
 
       // Create payment order with Razorpay
       const paymentOrderResponse = await axiosInstance.post(
@@ -152,10 +152,21 @@ const BookingWidget = ({ place }) => {
     }
   };
 
-  const handleMockPaymentClose = () => {
+  const handleMockPaymentClose = async () => {
+    // Cancel the booking if payment is not completed
+    if (currentBookingId) {
+      try {
+        await axiosInstance.delete(`/bookings/${currentBookingId}`);
+        toast.info('Booking cancelled. Payment was not completed.');
+      } catch (error) {
+        console.log('Error cancelling booking:', error);
+        toast.warn('Payment cancelled but could not delete pending booking. Please contact support.');
+      }
+    }
     setShowMockPayment(false);
     setIsProcessing(false);
-    toast.info('Payment cancelled. Your booking is pending.');
+    setCurrentBookingId(null);
+    setCurrentOrderDetails(null);
   };
 
   if (redirect) {
@@ -165,7 +176,7 @@ const BookingWidget = ({ place }) => {
   return (
     <div className="rounded-2xl bg-white p-4 shadow-xl">
       <div className="text-center text-xl">
-        Price: <span className="font-semibold">₹{place.price}</span> / per night
+        Price: <span className="font-semibold">₹{place.price * noOfGuests}</span> / per night per {noOfGuests} {noOfGuests === 1 ? 'guest' : 'guests'}
       </div>
       <div className="mt-4 rounded-2xl border">
         <div className="flex w-full ">
@@ -206,7 +217,7 @@ const BookingWidget = ({ place }) => {
         disabled={isProcessing}
       >
         {isProcessing ? 'Processing...' : 'Book this place'}
-        {numberOfNights > 0 && !isProcessing && <span> ₹{numberOfNights * place.price}</span>}
+        {numberOfNights > 0 && !isProcessing && <span> ₹{numberOfNights * place.price * noOfGuests}</span>}
       </button>
 
       <MockPaymentModal

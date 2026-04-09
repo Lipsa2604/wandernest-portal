@@ -5,6 +5,9 @@ const { isLoggedIn } = require("../middlewares/user");
 const {
   createBookings,
   getBookings,
+  getHostBookings,
+  getBookingById,
+  cancelBooking,
   checkAvailability,
   getBookedDates,
   createPaymentOrder,
@@ -21,5 +24,8 @@ router.post('/verify-payment', isLoggedIn, verifyPayment);
 
 // Protected routes (user must be logged in)
 router.route("/").get(isLoggedIn, getBookings).post(isLoggedIn, createBookings);
+router.get("/host/listings", isLoggedIn, getHostBookings);
+router.get("/:bookingId", isLoggedIn, getBookingById);
+router.delete("/:bookingId", isLoggedIn, cancelBooking);
 
 module.exports = router;

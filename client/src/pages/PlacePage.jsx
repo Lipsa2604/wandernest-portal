@@ -8,6 +8,7 @@ import AddressLink from '@/components/ui/AddressLink';
 import BookingWidget from '@/components/ui/BookingWidget';
 import PlaceGallery from '@/components/ui/PlaceGallery';
 import PerksWidget from '@/components/ui/PerksWidget';
+import ReviewsList from '@/components/ui/ReviewsList';
 
 const PlacePage = () => {
   const { id } = useParams();
@@ -64,6 +65,11 @@ const PlacePage = () => {
         <div className="mb-4 mt-2 text-sm leading-5 text-gray-700">
           {place.extraInfo}
         </div>
+      </div>
+
+      {/* Reviews Section */}
+      <div className="-mx-8 bg-gray-50 px-8 py-8">
+        <ReviewsList placeId={id} />
       </div>
     </div>
   );
