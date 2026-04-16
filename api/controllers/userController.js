@@ -159,6 +159,34 @@ exports.updateUserDetails = async (req, res) => {
   }
 }
 
+// Get current user info
+exports.getMe = async (req, res) => {
+  try {
+    const user = req.user;
+    if (!user) {
+      return res.status(401).json({
+        success: false,
+        message: 'Not authenticated',
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        picture: user.picture,
+      },
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: 'Internal server error',
+      error: error.message,
+    });
+  }
+};
+
 // Logout
 exports.logout = async (req, res) => {
   res.cookie('token', null, {

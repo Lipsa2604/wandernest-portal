@@ -176,7 +176,7 @@ exports.getPlaceReviews = async (req, res) => {
   }
 };
 
-// Get review for a specific booking
+// Get review for a booking
 exports.getBookingReview = async (req, res) => {
   try {
     const { bookingId } = req.params;

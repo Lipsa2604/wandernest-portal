@@ -2,3 +2,5 @@ node_modules
 .env
 .env.production
 .env.development
+# Local Netlify folder
+.netlify

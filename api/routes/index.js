@@ -56,6 +56,7 @@ router.use('/user', require('./user'));
 router.use('/places', require('./place'));
 router.use('/bookings', require('./booking'));
 router.use('/reviews', require('./review'));
+router.use('/auth', require('./auth'));
 
 
 module.exports = router;
