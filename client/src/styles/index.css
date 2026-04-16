@@ -52,7 +52,7 @@ input[type='email'],
 input[type='number'],
 input[type='tel'],
 textarea {
-  @apply my-2 w-full rounded-[10px] border py-2 px-3;
+  @apply my-2 w-full rounded-[10px] border px-3 py-2;
 }
 
 textarea {
@@ -72,5 +72,45 @@ button.social {
 }
 
 .card {
+  /* Responsive sizing with flexbox support */
   @apply h-[410px] w-[327px] sm:h-[500px] sm:w-[435px] md:h-[400px] md:w-[350px] lg:h-[400px] lg:w-[330px] xl:h-[350px] xl:w-[300px];
+
+  /* Ensure proper flex behavior */
+  display: flex;
+  flex-direction: column;
+
+  /* Proper shadow and border */
+  @apply overflow-hidden rounded-xl shadow-sm transition-shadow hover:shadow-md;
+}
+
+/* Performance optimizations for image lazy loading and blur-up effect */
+img[loading='lazy'] {
+  content-visibility: auto;
+  /* Optimize image rendering */
+  image-rendering: auto;
+  image-rendering: crisp-edges;
+}
+
+/* Smooth transitions for blur-up effect without jank */
+@media (prefers-reduced-motion: no-preference) {
+  img {
+    transition: opacity 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+}
+
+/* Critical styles for visible content */
+img[loading='eager'] {
+  content-visibility: visible;
+}
+
+/* Optimize animations on GPU */
+.blur-lg {
+  will-change: opacity;
+  backface-visibility: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Contain layout thrashing during image load */
+.rounded-xl {
+  contain: layout style paint;
 }

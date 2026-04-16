@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { generateOptimizedImage } from '@/utils/imageOptimization';
 
 const PlaceGallery = ({ place }) => {
   const [showAllPhotos, setShowAllPhotos] = useState(false);
@@ -30,8 +31,13 @@ const PlaceGallery = ({ place }) => {
           {place?.photos?.length > 0 &&
             place.photos.map((photo, index) => (
               <div key={index} className="max-w-full">
-                {/* <Image src={photo} /> */}
-                <img src={photo} alt="" />
+                {/* Compressed image for gallery view - aggressive compression with quality 65 */}
+                <img 
+                  src={generateOptimizedImage(photo, 1200, 65)} 
+                  alt={`Place photo ${index + 1}`}
+                  loading="lazy"
+                  decoding="async"
+                />
               </div>
             ))}
         </div>
@@ -49,8 +55,10 @@ const PlaceGallery = ({ place }) => {
               <img
                 onClick={() => setShowAllPhotos(true)}
                 className="h-full w-full cursor-pointer object-cover"
-                src={place.photos[0]}
-                alt=""
+                src={generateOptimizedImage(place.photos[0], 800, 'auto')}
+                alt="Main place photo"
+                loading="lazy"
+                decoding="async"
               />
             </div>
           )}
@@ -65,8 +73,10 @@ const PlaceGallery = ({ place }) => {
                 <img
                   onClick={() => setShowAllPhotos(true)}
                   className="h-full w-full cursor-pointer object-cover"
-                  src={place.photos[1]}
-                  alt=""
+                  src={generateOptimizedImage(place.photos[1], 400, 65)}
+                  alt="Place photo 2"
+                  loading="lazy"
+                  decoding="async"
                 />
               </div>
             )}
@@ -77,8 +87,10 @@ const PlaceGallery = ({ place }) => {
                 <img
                   onClick={() => setShowAllPhotos(true)}
                   className="h-full w-full cursor-pointer object-cover"
-                  src={place.photos[2]}
-                  alt=""
+                  src={generateOptimizedImage(place.photos[2], 400, 65)}
+                  alt="Place photo 3"
+                  loading="lazy"
+                  decoding="async"
                 />
               </div>
             )}
@@ -94,8 +106,10 @@ const PlaceGallery = ({ place }) => {
                 <img
                   onClick={() => setShowAllPhotos(true)}
                   className="h-full w-full cursor-pointer object-cover"
-                  src={place.photos[3]}
-                  alt=""
+                  src={generateOptimizedImage(place.photos[3], 400, 65)}
+                  alt="Place photo 4"
+                  loading="lazy"
+                  decoding="async"
                 />
               </div>
             )}
@@ -106,8 +120,10 @@ const PlaceGallery = ({ place }) => {
                 <img
                   onClick={() => setShowAllPhotos(true)}
                   className="h-full w-full cursor-pointer object-cover"
-                  src={place.photos[4]}
-                  alt=""
+                  src={generateOptimizedImage(place.photos[4], 400, 65)}
+                  alt="Place photo 5"
+                  loading="lazy"
+                  decoding="async"
                 />
               </div>
             )}
@@ -122,8 +138,10 @@ const PlaceGallery = ({ place }) => {
             <img
               onClick={() => setShowAllPhotos(true)}
               className="h-full cursor-pointer object-cover"
-              src={place.photos[0]}
-              alt=""
+              src={generateOptimizedImage(place.photos[0], 600, 65)}
+              alt="Main place photo"
+              loading="lazy"
+              decoding="async"
             />
           </div>
         )}
